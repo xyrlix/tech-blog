@@ -23,13 +23,13 @@
 
 **方法一：一键启动（推荐）**
 ```bash
-cd F:/output/tech-blog
+cd tech-blog
 python start.py
 ```
 
 **方法二：手动启动**
 ```bash
-cd F:/output/tech-blog/backend
+cd tech-blog/backend
 pip install -r requirements.txt
 python main.py
 ```
@@ -44,7 +44,7 @@ python main.py
 ### Docker 部署（生产环境）
 
 ```bash
-cd F:/output/tech-blog/deploy
+cd tech-blog/deploy
 docker-compose up -d
 ```
 
@@ -191,7 +191,7 @@ DATABASE_URL=sqlite:///./blog.db
 项目自带完整功能测试：
 
 ```bash
-cd F:/output/tech-blog/backend
+cd tech-blog/backend
 python run_tests.py
 ```
 
