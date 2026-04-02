@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文章 - TechBlog</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div id="navbar" class="container" style="display:flex;align-items:center;width:100%;"></div>
+</header>
+
+<div class="container">
+  <div class="layout">
+    <main class="main">
+      <div id="postContent">
+        <div class="loading"><div class="spinner"></div><p>加载中...</p></div>
+      </div>
+    </main>
+    <aside class="sidebar" id="sidebar"></aside>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  const slug = getParam('slug');
+
+  if (!slug) {
+    document.getElementById('postContent').innerHTML = '<div class="empty"><div class="icon">⚠️</div><p>文章不存在</p></div>';
+  } else {
+    loadPost();
+  }
+
+  async function loadPost() {
+    try {
+      const post = await api.get(`/posts/${slug}`);
+      document.title = `${post.title} - TechBlog`;
+
+      const tags = (post.tags || []).map(t =>
+        `<a href="/pages/index.html?tag=${t.slug}" class="tag-badge">${t.name}</a>`).join('');
+      const cat = post.category
+        ? `<a href="/pages/index.html?category=${post.category.slug}">📁 ${post.category.name}</a>` : '';
+      const editBtn = Auth.isLoggedIn()
+        ? `<a href="/pages/admin/editor.html?slug=${post.slug}" class="btn btn-outline btn-sm" style="margin-left:auto">✏️ 编辑</a>` : '';
+
+      document.getElementById('postContent').innerHTML = `
+        <article class="card">
+          <div class="card-body">
+            <div class="post-header">
+              <h1>${post.title}</h1>
+              <div class="meta">
+                ${cat}
+                <span>✍️ ${post.author?.username || ''}</span>
+                <span>📅 ${formatDate(post.created_at)}</span>
+                <span>👁 ${post.views} 次阅读</span>
+                ${editBtn}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${tags}</div>
+            </div>
+            ${post.cover ? `<img src="${post.cover}" alt="${post.title}" style="width:100%;max-height:400px;object-fit:cover;margin-bottom:24px">` : ''}
+            <div class="markdown-body">${post.content_html}</div>
+          </div>
+        </article>
+
+        <!-- 评论区 -->
+        <div class="card" style="margin-top:20px">
+          <div class="card-body comments-section">
+            <h3>💬 评论 (<span id="commentCount">0</span>)</h3>
+
+            <div class="comment-form">
+              <div class="row">
+                <input type="text" id="nickName" placeholder="昵称 *" required style="flex:1">
+                <input type="email" id="email" placeholder="邮箱（可选）" style="flex:1">
+              </div>
+              <textarea id="commentContent" placeholder="写下你的评论..."></textarea>
+              <div style="margin-top:10px;display:flex;justify-content:flex-end">
+                <button class="btn btn-primary" onclick="submitComment()">发表评论</button>
+              </div>
+            </div>
+
+            <div id="commentList"></div>
+          </div>
+        </div>
+      `;
+
+      loadComments();
+    } catch (e) {
+      document.getElementById('postContent').innerHTML =
+        `<div class="empty"><div class="icon">⚠️</div><p>${e.message}</p></div>`;
+    }
+  }
+
+  async function loadComments() {
+    try {
+      const comments = await api.get(`/posts/${slug}/comments`);
+      document.getElementById('commentCount').textContent = comments.length;
+      document.getElementById('commentList').innerHTML = comments.length
+        ? comments.map(renderComment).join('')
+        : '<p style="color:var(--text-muted);text-align:center;padding:20px">暂无评论，来发第一条吧！</p>';
+    } catch {}
+  }
+
+  function renderComment(c) {
+    const replies = (c.replies || []).map(r => `
+      <div class="comment-item" style="padding-left:0">
+        <div class="comment-meta">
+          <div class="avatar">${r.nickname[0].toUpperCase()}</div>
+          <span class="name">${r.nickname}</span>
+          <span class="time">${timeAgo(r.created_at)}</span>
+        </div>
+        <div class="content">${r.content}</div>
+      </div>`).join('');
+
+    return `
+      <div class="comment-item">
+        <div class="comment-meta">
+          <div class="avatar">${c.nickname[0].toUpperCase()}</div>
+          <span class="name">${c.nickname}</span>
+          <span class="time">${timeAgo(c.created_at)}</span>
+          <button class="btn btn-sm" style="margin-left:8px;padding:2px 8px" onclick="replyTo(${c.id}, '${c.nickname}')">回复</button>
+        </div>
+        <div class="content">${c.content}</div>
+        ${replies ? `<div class="reply-list">${replies}</div>` : ''}
+      </div>`;
+  }
+
+  let replyToId = null;
+  function replyTo(id, name) {
+    replyToId = id;
+    const ta = document.getElementById('commentContent');
+    ta.value = `@${name} `;
+    ta.focus();
+    document.getElementById('commentContent').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function submitComment() {
+    const nickname = document.getElementById('nickName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const content = document.getElementById('commentContent').value.trim();
+    if (!nickname) return showToast('请填写昵称', 'error');
+    if (!content) return showToast('请填写评论内容', 'error');
+    try {
+      await api.post(`/posts/${slug}/comments`, { nickname, email, content, parent_id: replyToId });
+      showToast('评论发表成功', 'success');
+      document.getElementById('commentContent').value = '';
+      replyToId = null;
+      loadComments();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  window.replyTo = replyTo;
+  window.submitComment = submitComment;
+
+  renderNavbar();
+  renderSidebar();
+</script>
+</body>
+</html>

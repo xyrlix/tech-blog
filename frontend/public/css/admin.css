@@ -1,0 +1,76 @@
+/* ═══════════════════════════════════════════════════════
+   后台管理 样式
+   ═══════════════════════════════════════════════════════ */
+.admin-layout { display: flex; height: 100vh; overflow: hidden; }
+
+/* 侧边菜单 */
+.admin-sidebar {
+  width: 220px; background: #1a1d21; color: #c9d1d9;
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.admin-sidebar .logo { padding: 20px; font-size: 1.1rem; font-weight: 700; color: #fff; border-bottom: 1px solid #30363d; }
+.admin-sidebar .logo span { color: var(--primary); }
+.admin-sidebar nav { padding: 12px 0; flex: 1; }
+.admin-sidebar nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #8b949e; font-size: .9rem; transition: all .2s; }
+.admin-sidebar nav a:hover, .admin-sidebar nav a.active { background: #21262d; color: #fff; text-decoration: none; }
+.admin-sidebar nav a .nav-icon { width: 18px; text-align: center; }
+.admin-sidebar .admin-user { padding: 16px 20px; border-top: 1px solid #30363d; display: flex; align-items: center; gap: 10px; font-size: .85rem; }
+.admin-sidebar .admin-user .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .8rem; font-weight: 700; }
+
+/* 主内容区 */
+.admin-content { flex: 1; overflow-y: auto; background: var(--bg); display: flex; flex-direction: column; }
+.admin-topbar { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.admin-topbar h2 { font-size: 1rem; font-weight: 600; }
+.admin-main { padding: 24px; flex: 1; }
+
+/* 仪表盘统计卡片 */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; align-items: center; gap: 16px; }
+.stat-card .icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+.stat-card .icon.blue { background: #4f8ef722; }
+.stat-card .icon.green { background: #28a74522; }
+.stat-card .icon.orange { background: #fd7e1422; }
+.stat-card .icon.purple { background: #6f42c122; }
+.stat-card .value { font-size: 1.6rem; font-weight: 700; }
+.stat-card .label { font-size: .82rem; color: var(--text-muted); }
+
+/* 表格 */
+.admin-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.admin-table th { background: var(--bg); font-weight: 600; font-size: .85rem; padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.admin-table td { padding: 12px 16px; border-bottom: 1px solid var(--border)88; font-size: .88rem; vertical-align: middle; }
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tr:hover td { background: var(--bg); }
+.admin-table .actions { display: flex; gap: 6px; }
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 10px; font-size: .75rem; font-weight: 600; }
+.badge-success { background: #28a74520; color: #28a745; }
+.badge-secondary { background: #6e778120; color: #6e7781; }
+.badge-danger { background: #dc354520; color: #dc3545; }
+
+/* 文章编辑器 */
+.editor-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; height: calc(100vh - 52px - 48px); }
+.editor-main { display: flex; flex-direction: column; min-width: 0; }
+.editor-main input[name="title"] { font-size: 1.3rem; font-weight: 700; border: none; border-bottom: 2px solid var(--border); border-radius: 0; background: transparent; padding: 12px 4px; margin-bottom: 12px; }
+.editor-main input[name="title"]:focus { border-bottom-color: var(--primary); }
+.editor-toolbar { display: flex; gap: 4px; padding: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; border-bottom: none; flex-wrap: wrap; }
+.editor-toolbar button { padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; font-size: .82rem; color: var(--text-muted); font-family: var(--font-mono); transition: all .2s; }
+.editor-toolbar button:hover { background: var(--bg-card); border-color: var(--border); color: var(--text); }
+.editor-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 0; flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+.editor-panes textarea { border: none; padding: 16px; font-family: var(--font-mono); font-size: .88rem; resize: none; outline: none; background: var(--bg-card); color: var(--text); border-right: 1px solid var(--border); height: 100%; }
+.editor-preview { padding: 16px; overflow-y: auto; background: var(--bg-card); height: 100%; }
+.editor-sidebar { overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.editor-sidebar .section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.editor-sidebar .section h4 { font-size: .88rem; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* 登录页 */
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.login-card { background: var(--bg-card); border-radius: 16px; padding: 40px; width: 360px; box-shadow: var(--shadow-lg); }
+.login-card .title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 28px; }
+.login-card .title span { color: var(--primary); }
+
+@media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px) {
+  .admin-layout { flex-direction: column; }
+  .admin-sidebar { width: 100%; height: auto; }
+  .editor-layout { grid-template-columns: 1fr; height: auto; }
+  .editor-panes { grid-template-columns: 1fr; height: 400px; }
+}

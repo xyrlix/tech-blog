@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>首页 - TechBlog</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div id="navbar" class="container" style="display:flex;align-items:center;width:100%;"></div>
+</header>
+
+<div class="container">
+  <div class="layout">
+    <main class="main">
+      <!-- 搜索提示 -->
+      <div id="searchTip" style="display:none;margin-bottom:16px;padding:10px 16px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);font-size:.9rem;"></div>
+
+      <!-- 文章列表 -->
+      <div id="postList">
+        <div class="loading"><div class="spinner"></div><p>加载中...</p></div>
+      </div>
+
+      <!-- 分页 -->
+      <div id="pagination" class="pagination"></div>
+    </main>
+
+    <aside class="sidebar" id="sidebar"></aside>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentPage = 1;
+  const q = getParam('q');
+  const category = getParam('category');
+  const tag = getParam('tag');
+
+  async function loadPosts(page = 1) {
+    currentPage = page;
+    document.getElementById('postList').innerHTML = '<div class="loading"><div class="spinner"></div><p>加载中...</p></div>';
+
+    try {
+      const params = { page, page_size: 10 };
+      if (q) params.q = q;
+      if (category) params.category = category;
+      if (tag) params.tag = tag;
+
+      const data = await api.get('/posts', params);
+
+      if (data.items.length === 0) {
+        document.getElementById('postList').innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无文章</p></div>';
+        return;
+      }
+
+      document.getElementById('postList').innerHTML = data.items.map(buildPostCard).join('');
+      renderPagination(document.getElementById('pagination'), data.pagination, 'loadPosts');
+
+    } catch (e) {
+      document.getElementById('postList').innerHTML = `<div class="empty"><div class="icon">⚠️</div><p>${e.message}</p></div>`;
+    }
+  }
+
+  // 搜索/过滤提示
+  if (q) document.getElementById('searchTip').style.display = 'block', document.getElementById('searchTip').textContent = `🔍 搜索「${q}」的结果`;
+  if (category) document.getElementById('searchTip').style.display = 'block', document.getElementById('searchTip').textContent = `📁 分类筛选：${category}`;
+  if (tag) document.getElementById('searchTip').style.display = 'block', document.getElementById('searchTip').textContent = `🏷️ 标签筛选：${tag}`;
+
+  renderNavbar('home');
+  renderSidebar();
+  loadPosts(1);
+
+  window.loadPosts = loadPosts;
+</script>
+</body>
+</html>

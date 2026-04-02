@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>后台管理 - TechBlog</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+  <!-- 侧边栏（动态渲染） -->
+  <aside class="admin-sidebar" id="adminSidebar"></aside>
+
+  <!-- 主内容 -->
+  <div class="admin-content">
+    <div class="admin-topbar">
+      <h2>仪表盘</h2>
+      <button class="btn btn-sm btn-outline" onclick="Auth.logout()">退出登录</button>
+    </div>
+    <div class="admin-main">
+      <!-- 统计卡片 -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="icon blue">📝</div>
+          <div><div class="value" id="postCount">-</div><div class="label">文章总数</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="icon green">✅</div>
+          <div><div class="value" id="publishedCount">-</div><div class="label">已发布</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="icon orange">👁</div>
+          <div><div class="value" id="viewCount">-</div><div class="label">总阅读量</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="icon purple">💬</div>
+          <div><div class="value" id="commentCount">-</div><div class="label">评论数</div></div>
+        </div>
+      </div>
+
+      <!-- 最新文章 -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 style="font-size:1rem;font-weight:700">最近文章</h3>
+            <a href="posts.html" class="btn btn-sm btn-outline">查看全部</a>
+          </div>
+          <table class="admin-table" id="recentPosts">
+            <thead><tr><th>标题</th><th>分类</th><th>状态</th><th>阅读</th><th>时间</th><th>操作</th></tr></thead>
+            <tbody><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">加载中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 快速写文章 -->
+      <div class="card">
+        <div class="card-body" style="text-align:center;padding:40px">
+          <div style="font-size:2rem;margin-bottom:12px">✏️</div>
+          <h3 style="margin-bottom:12px">开始创作</h3>
+          <p style="color:var(--text-muted);margin-bottom:20px">使用 Markdown 编辑器，支持实时预览和代码高亮</p>
+          <a href="editor.html" class="btn btn-primary">📝 写新文章</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+  requireLogin();
+  renderAdminSidebar('dashboard');
+
+  async function loadDashboard() {
+    try {
+      const data = await api.get('/posts', { page: 1, page_size: 50 });
+      const posts = data.items;
+      document.getElementById('postCount').textContent = data.pagination.total;
+      document.getElementById('publishedCount').textContent = posts.filter(p => p.is_published).length;
+      document.getElementById('viewCount').textContent = posts.reduce((s, p) => s + p.views, 0);
+
+      const tbody = document.querySelector('#recentPosts tbody');
+      const recent = posts.slice(0, 8);
+      tbody.innerHTML = recent.length ? recent.map(p => `
+        <tr>
+          <td><a href="/pages/post.html?slug=${p.slug}" target="_blank" style="color:var(--text)">${p.title}</a></td>
+          <td>${p.category?.name || '-'}</td>
+          <td><span class="badge ${p.is_published ? 'badge-success' : 'badge-secondary'}">${p.is_published ? '已发布' : '草稿'}</span></td>
+          <td>${p.views}</td>
+          <td>${formatDate(p.created_at)}</td>
+          <td class="actions">
+            <a href="editor.html?slug=${p.slug}" class="btn btn-sm btn-outline">编辑</a>
+          </td>
+        </tr>`).join('')
+        : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">暂无文章</td></tr>';
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>

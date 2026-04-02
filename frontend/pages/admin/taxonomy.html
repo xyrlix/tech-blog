@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分类标签管理 - TechBlog</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar" id="adminSidebar"></aside>
+
+  <div class="admin-content">
+    <div class="admin-topbar"><h2>🏷️ 分类 & 标签管理</h2></div>
+    <div class="admin-main">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+        <!-- 分类 -->
+        <div class="card">
+          <div class="card-body">
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">📁 分类管理</h3>
+            <div style="display:flex;gap:8px;margin-bottom:16px">
+              <input class="form-control" id="catName" placeholder="分类名称">
+              <input class="form-control" id="catSlug" placeholder="slug（URL标识）">
+              <button class="btn btn-primary btn-sm" onclick="createCategory()">添加</button>
+            </div>
+            <table class="admin-table" id="catTable">
+              <thead><tr><th>名称</th><th>Slug</th><th>文章数</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 标签 -->
+        <div class="card">
+          <div class="card-body">
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px">🏷️ 标签管理</h3>
+            <div style="display:flex;gap:8px;margin-bottom:16px">
+              <input class="form-control" id="tagName" placeholder="标签名称">
+              <input class="form-control" id="tagSlug" placeholder="slug">
+              <button class="btn btn-primary btn-sm" onclick="createTag()">添加</button>
+            </div>
+            <table class="admin-table" id="tagTable">
+              <thead><tr><th>名称</th><th>Slug</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+  requireLogin();
+  renderAdminSidebar('taxonomy');
+
+  async function loadCategories() {
+    const data = await api.get('/categories');
+    document.querySelector('#catTable tbody').innerHTML = data.map(c => `
+      <tr>
+        <td>${c.name}</td><td><code>${c.slug}</code></td><td>${c.post_count}</td>
+        <td><button class="btn btn-sm btn-danger" onclick="deleteCategory(${c.id})">删除</button></td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">暂无分类</td></tr>';
+  }
+
+  async function loadTags() {
+    const data = await api.get('/tags');
+    document.querySelector('#tagTable tbody').innerHTML = data.map(t => `
+      <tr>
+        <td>${t.name}</td><td><code>${t.slug}</code></td>
+        <td><button class="btn btn-sm btn-danger" onclick="deleteTag(${t.id})">删除</button></td>
+      </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">暂无标签</td></tr>';
+  }
+
+  async function createCategory() {
+    const name = document.getElementById('catName').value.trim();
+    const slug = document.getElementById('catSlug').value.trim();
+    if (!name || !slug) return showToast('请填写名称和slug', 'error');
+    try { await api.post('/categories', { name, slug }); showToast('添加成功', 'success'); document.getElementById('catName').value = ''; document.getElementById('catSlug').value = ''; loadCategories(); }
+    catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function createTag() {
+    const name = document.getElementById('tagName').value.trim();
+    const slug = document.getElementById('tagSlug').value.trim();
+    if (!name || !slug) return showToast('请填写名称和slug', 'error');
+    try { await api.post('/tags', { name, slug }); showToast('添加成功', 'success'); document.getElementById('tagName').value = ''; document.getElementById('tagSlug').value = ''; loadTags(); }
+    catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function deleteCategory(id) {
+    if (!confirm('确认删除此分类？')) return;
+    try { await api.delete(`/categories/${id}`); showToast('已删除', 'success'); loadCategories(); }
+    catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function deleteTag(id) {
+    if (!confirm('确认删除此标签？')) return;
+    try { await api.delete(`/tags/${id}`); showToast('已删除', 'success'); loadTags(); }
+    catch (e) { showToast(e.message, 'error'); }
+  }
+
+  window.createCategory = createCategory; window.createTag = createTag;
+  window.deleteCategory = deleteCategory; window.deleteTag = deleteTag;
+
+  loadCategories(); loadTags();
+</script>
+</body>
+</html>

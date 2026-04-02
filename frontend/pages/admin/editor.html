@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown 编辑器 - TechBlog</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar" id="adminSidebar"></aside>
+
+  <div class="admin-content">
+    <div class="admin-topbar">
+      <h2 id="pageTitle">✏️ 写新文章</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-outline" onclick="saveDraft()">💾 保存草稿</button>
+        <button class="btn btn-sm btn-primary" onclick="publishPost()">🚀 发布文章</button>
+        <button class="btn btn-sm" onclick="Auth.logout()">退出</button>
+      </div>
+    </div>
+
+    <div class="admin-main" style="padding:16px">
+      <div class="editor-layout">
+        <!-- 左侧编辑器 -->
+        <div class="editor-main">
+          <input class="form-control" name="title" id="postTitle" placeholder="文章标题..." autocomplete="off">
+
+          <div class="editor-toolbar">
+            <button onclick="ins('**', '**')" title="粗体"><b>B</b></button>
+            <button onclick="ins('*', '*')" title="斜体"><i>I</i></button>
+            <button onclick="ins('~~', '~~')" title="删除线">~~</button>
+            <button onclick="ins('# ', '')" title="H1">H1</button>
+            <button onclick="ins('## ', '')" title="H2">H2</button>
+            <button onclick="ins('### ', '')" title="H3">H3</button>
+            <button onclick="ins('> ', '')" title="引用">❝</button>
+            <button onclick="ins('`', '`')" title="行内代码">code</button>
+            <button onclick="insCode()" title="代码块">```</button>
+            <button onclick="ins('- ', '')" title="无序列表">• 列表</button>
+            <button onclick="ins('1. ', '')" title="有序列表">1. 列表</button>
+            <button onclick="insLink()" title="链接">🔗</button>
+            <button onclick="insImage()" title="图片">🖼️</button>
+            <button onclick="insTable()" title="表格">⊞</button>
+            <button onclick="insHr()" title="分割线">──</button>
+            <button onclick="togglePreview()" id="previewBtn" title="切换预览">👁 预览</button>
+          </div>
+
+          <div class="editor-panes">
+            <textarea id="editor" placeholder="用 Markdown 书写你的文章内容..."></textarea>
+            <div class="editor-preview markdown-body" id="preview" style="display:none"></div>
+          </div>
+        </div>
+
+        <!-- 右侧设置面板 -->
+        <div class="editor-sidebar">
+          <div class="section">
+            <h4>📋 基本设置</h4>
+            <div class="form-group">
+              <label>URL Slug</label>
+              <input class="form-control" id="postSlug" placeholder="自动生成（可自定义）">
+            </div>
+            <div class="form-group">
+              <label>文章摘要</label>
+              <textarea class="form-control" id="postSummary" rows="3" placeholder="不填则取正文前150字"></textarea>
+            </div>
+            <div class="form-group">
+              <label>封面图 URL</label>
+              <input class="form-control" id="postCover" placeholder="https://...">
+            </div>
+            <div style="display:flex;gap:20px;margin-top:8px">
+              <label class="form-check">
+                <input type="checkbox" id="isPublished"> 立即发布
+              </label>
+              <label class="form-check">
+                <input type="checkbox" id="isTop"> 置顶
+              </label>
+            </div>
+          </div>
+
+          <div class="section">
+            <h4>📁 分类</h4>
+            <select class="form-control" id="postCategory">
+              <option value="">不选分类</option>
+            </select>
+          </div>
+
+          <div class="section">
+            <h4>🏷️ 标签</h4>
+            <div id="tagList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          </div>
+
+          <div class="section">
+            <h4>📤 图片上传</h4>
+            <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="uploadImage()">
+            <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imgUpload').click()">
+              🖼️ 上传图片
+            </button>
+            <div id="uploadStatus" style="margin-top:8px;font-size:.82rem;color:var(--text-muted)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+  requireLogin();
+  renderAdminSidebar('editor');
+
+  const slug = getParam('slug');
+  let editMode = !!slug;
+  let selectedTags = new Set();
+  let allTags = [];
+
+  if (slug) document.getElementById('pageTitle').textContent = '✏️ 编辑文章';
+
+  // 实时 Markdown 预览
+  let previewVisible = false;
+  const editor = document.getElementById('editor');
+  const preview = document.getElementById('preview');
+
+  editor.addEventListener('input', debounce(updatePreview, 400));
+
+  async function updatePreview() {
+    if (!previewVisible) return;
+    const content = editor.value;
+    // 调用后端渲染（或直接本地渲染，此处用简单替换）
+    preview.innerHTML = '<em style="color:var(--text-muted)">渲染中...</em>';
+    try {
+      // 临时保存到后端获取渲染结果，或者直接用marked.js
+      // 这里直接展示原文（正式部署可引入 marked.js）
+      preview.textContent = content;
+    } catch {}
+  }
+
+  function togglePreview() {
+    previewVisible = !previewVisible;
+    editor.style.display = previewVisible ? 'none' : '';
+    preview.style.display = previewVisible ? '' : 'none';
+    document.getElementById('previewBtn').textContent = previewVisible ? '✏️ 编辑' : '👁 预览';
+    if (previewVisible) updatePreview();
+  }
+
+  // 工具栏辅助函数
+  function ins(before, after) {
+    const ta = editor;
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    const sel = ta.value.substring(s, e);
+    ta.value = ta.value.substring(0, s) + before + sel + after + ta.value.substring(e);
+    ta.focus();
+    ta.selectionStart = s + before.length;
+    ta.selectionEnd = s + before.length + sel.length;
+  }
+  function insCode() { ins('\n```python\n', '\n```\n'); }
+  function insLink() { const u = prompt('链接地址：'); if (u) ins(`[`, `](${u})`); }
+  function insImage() { const u = prompt('图片地址：'); if (u) ins('\n![图片描述](', `${u})\n`); }
+  function insTable() { ins('\n| 列1 | 列2 | 列3 |\n|-----|-----|-----|\n| ', ' |  |  |\n'); }
+  function insHr() { ins('\n\n---\n\n', ''); }
+
+  function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+  // 加载分类和标签
+  async function loadMeta() {
+    try {
+      const [cats, tags] = await Promise.all([api.get('/categories'), api.get('/tags')]);
+      allTags = tags;
+      const sel = document.getElementById('postCategory');
+      cats.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name}</option>`));
+      renderTagList();
+    } catch {}
+  }
+
+  function renderTagList() {
+    document.getElementById('tagList').innerHTML = allTags.map(t => `
+      <label style="cursor:pointer;display:flex;align-items:center;gap:4px;font-size:.82rem">
+        <input type="checkbox" value="${t.id}" ${selectedTags.has(t.id) ? 'checked' : ''}
+          onchange="toggleTag(${t.id})" style="width:14px;height:14px">
+        ${t.name}
+      </label>`).join('');
+  }
+
+  function toggleTag(id) {
+    selectedTags.has(id) ? selectedTags.delete(id) : selectedTags.add(id);
+  }
+
+  // 加载已有文章
+  async function loadPost() {
+    try {
+      const post = await api.get(`/posts/${slug}`);
+      document.getElementById('postTitle').value = post.title;
+      document.getElementById('postSlug').value = post.slug;
+      document.getElementById('postSummary').value = post.summary;
+      document.getElementById('postCover').value = post.cover;
+      document.getElementById('isPublished').checked = post.is_published;
+      document.getElementById('isTop').checked = post.is_top;
+      editor.value = post.content;
+      if (post.category_id) document.getElementById('postCategory').value = post.category_id;
+      post.tags.forEach(t => selectedTags.add(t.id));
+      renderTagList();
+    } catch (e) {
+      showToast('加载文章失败: ' + e.message, 'error');
+    }
+  }
+
+  function buildPayload(publish) {
+    const title = document.getElementById('postTitle').value.trim();
+    if (!title) { showToast('请填写标题', 'error'); return null; }
+    const content = editor.value.trim();
+    if (!content) { showToast('请填写内容', 'error'); return null; }
+    return {
+      title,
+      slug: document.getElementById('postSlug').value.trim() || undefined,
+      summary: document.getElementById('postSummary').value.trim(),
+      content,
+      cover: document.getElementById('postCover').value.trim(),
+      is_published: publish ?? document.getElementById('isPublished').checked,
+      is_top: document.getElementById('isTop').checked,
+      category_id: document.getElementById('postCategory').value ? parseInt(document.getElementById('postCategory').value) : null,
+      tag_ids: [...selectedTags],
+    };
+  }
+
+  async function saveDraft() {
+    const payload = buildPayload(false);
+    if (!payload) return;
+    try {
+      let result;
+      if (editMode) result = await api.put(`/posts/${slug}`, payload);
+      else { result = await api.post('/posts', payload); editMode = true; document.getElementById('postSlug').value = result.slug; }
+      showToast('草稿已保存', 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function publishPost() {
+    const payload = buildPayload(true);
+    if (!payload) return;
+    try {
+      let result;
+      if (editMode) result = await api.put(`/posts/${slug}`, { ...payload, is_published: true });
+      else result = await api.post('/posts', { ...payload, is_published: true });
+      showToast('文章已发布！', 'success');
+      setTimeout(() => window.location.href = `/pages/post.html?slug=${result.slug}`, 1000);
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function uploadImage() {
+    const file = document.getElementById('imgUpload').files[0];
+    if (!file) return;
+    const status = document.getElementById('uploadStatus');
+    status.textContent = '上传中...';
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const token = Auth.getToken();
+      const res = await fetch('/api/v1/upload/image', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      ins('\n![图片](', `${data.url})\n`);
+      status.textContent = `✅ 上传成功：${data.url}`;
+    } catch (e) {
+      status.textContent = '❌ ' + e.message;
+    }
+  }
+
+  window.ins = ins; window.insCode = insCode; window.insLink = insLink;
+  window.insImage = insImage; window.insTable = insTable; window.insHr = insHr;
+  window.togglePreview = togglePreview; window.toggleTag = toggleTag;
+  window.saveDraft = saveDraft; window.publishPost = publishPost;
+  window.uploadImage = uploadImage;
+
+  loadMeta().then(() => { if (editMode) loadPost(); });
+</script>
+</body>
+</html>

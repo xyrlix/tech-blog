@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>归档 - TechBlog</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .archive-year { margin: 32px 0 8px; font-size: 1.5rem; font-weight: 700; color: var(--primary); border-left: 4px solid var(--primary); padding-left: 12px; }
+    .archive-month { margin: 16px 0 4px 16px; font-size: 1rem; font-weight: 600; color: var(--text-muted); }
+    .archive-item { display: flex; align-items: center; gap: 12px; padding: 8px 16px 8px 32px; border-radius: var(--radius); transition: background .15s; }
+    .archive-item:hover { background: var(--bg-card); }
+    .archive-item .date { color: var(--text-muted); font-size: .85rem; white-space: nowrap; font-family: monospace; }
+    .archive-item a { color: var(--text); text-decoration: none; flex: 1; }
+    .archive-item a:hover { color: var(--primary); }
+    .archive-item .views { color: var(--text-muted); font-size: .8rem; white-space: nowrap; }
+    .archive-stats { display: flex; gap: 24px; margin-bottom: 24px; }
+    .stat-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 24px; text-align: center; }
+    .stat-item .num { font-size: 2rem; font-weight: 700; color: var(--primary); }
+    .stat-item .label { font-size: .85rem; color: var(--text-muted); margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<header class="navbar">
+  <div id="navbar" class="container" style="display:flex;align-items:center;width:100%;"></div>
+</header>
+
+<div class="container">
+  <div class="layout">
+    <main class="main">
+      <div class="card">
+        <div class="card-body">
+          <h2 style="margin-bottom:20px">📚 文章归档</h2>
+
+          <!-- 统计 -->
+          <div class="archive-stats" id="archiveStats">
+            <div class="stat-item"><div class="num" id="totalPosts">-</div><div class="label">篇文章</div></div>
+            <div class="stat-item"><div class="num" id="totalYears">-</div><div class="label">年</div></div>
+            <div class="stat-item"><div class="num" id="totalViews">-</div><div class="label">总浏览</div></div>
+          </div>
+
+          <!-- 归档列表 -->
+          <div id="archiveList">
+            <div class="loading"><div class="spinner"></div><p>加载中...</p></div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <aside class="sidebar" id="sidebar"></aside>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  async function loadArchive() {
+    try {
+      // 获取所有文章（分页全量）
+      let allPosts = [];
+      let page = 1;
+      while (true) {
+        const data = await api.get('/posts', { page, page_size: 100 });
+        allPosts = allPosts.concat(data.items);
+        if (page >= data.pagination.pages) break;
+        page++;
+      }
+
+      // 统计
+      const totalViews = allPosts.reduce((s, p) => s + (p.views || 0), 0);
+      const years = new Set(allPosts.map(p => new Date(p.created_at).getFullYear()));
+      document.getElementById('totalPosts').textContent = allPosts.length;
+      document.getElementById('totalYears').textContent = years.size;
+      document.getElementById('totalViews').textContent = totalViews >= 1000
+        ? (totalViews / 1000).toFixed(1) + 'k' : totalViews;
+
+      if (allPosts.length === 0) {
+        document.getElementById('archiveList').innerHTML =
+          '<div class="empty"><div class="icon">📭</div><p>暂无文章</p></div>';
+        return;
+      }
+
+      // 按年月分组
+      const grouped = {};
+      for (const post of allPosts) {
+        const d = new Date(post.created_at);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const key = `${y}-${String(m).padStart(2,'0')}`;
+        if (!grouped[y]) grouped[y] = {};
+        if (!grouped[y][key]) grouped[y][key] = [];
+        grouped[y][key].push(post);
+      }
+
+      const sortedYears = Object.keys(grouped).sort((a, b) => b - a);
+      let html = '';
+      for (const year of sortedYears) {
+        html += `<div class="archive-year">${year} 年</div>`;
+        const sortedMonths = Object.keys(grouped[year]).sort((a, b) => b.localeCompare(a));
+        for (const monthKey of sortedMonths) {
+          const [, m] = monthKey.split('-');
+          const monthPosts = grouped[year][monthKey].sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          );
+          html += `<div class="archive-month">${parseInt(m)} 月 <span style="font-weight:normal">(${monthPosts.length})</span></div>`;
+          for (const post of monthPosts) {
+            const d = new Date(post.created_at);
+            const dateStr = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            html += `
+              <div class="archive-item">
+                <span class="date">${dateStr}</span>
+                <a href="/pages/post.html?slug=${post.slug}">${post.title}</a>
+                ${post.category ? `<span class="views">📁 ${post.category.name}</span>` : ''}
+                <span class="views">👁 ${post.views}</span>
+              </div>`;
+          }
+        }
+      }
+
+      document.getElementById('archiveList').innerHTML = html;
+    } catch (e) {
+      document.getElementById('archiveList').innerHTML =
+        `<div class="empty"><div class="icon">⚠️</div><p>${e.message}</p></div>`;
+    }
+  }
+
+  renderNavbar('archive');
+  renderSidebar();
+  loadArchive();
+</script>
+</body>
+</html>

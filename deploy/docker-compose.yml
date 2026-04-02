@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: techblog-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./frontend:/frontend
+      - blog_data:/app/data
+    environment:
+      - BLOG_TITLE=我的技术博客
+      - BLOG_AUTHOR=Admin
+      - ADMIN_PASSWORD=admin123
+    restart: unless-stopped
+
+volumes:
+  blog_data:
